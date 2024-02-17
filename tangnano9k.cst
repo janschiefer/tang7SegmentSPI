@@ -8,14 +8,14 @@ IO_LOC "led[5]" 16;
 IO_LOC "key" 3;
 IO_LOC "rst" 4;
 
-IO_LOC "mosi" 51;
-IO_PORT "mosi" IO_TYPE=LVCMOS33;
+IO_LOC "seven_segm_mosi" 51;
+IO_PORT "seven_segm_mosi" IO_TYPE=LVCMOS33;
 
-IO_LOC "ss" 53;
-IO_PORT "ss" IO_TYPE=LVCMOS33;
+IO_LOC "seven_segm_ss" 53;
+IO_PORT "seven_segm_ss" IO_TYPE=LVCMOS33;
 
-IO_LOC "sclk" 54;
-IO_PORT "sclk" IO_TYPE=LVCMOS33;
+IO_LOC "seven_segm_sclk" 54;
+IO_PORT "seven_segm_sclk" IO_TYPE=LVCMOS33;
 
 
 

@@ -14,9 +14,9 @@ case class TopLevel() extends Component {
 
     val rst = in Bool ()
   }
-  io.spi_out.mosi.setName("mosi")
-  io.spi_out.ss.setName("ss")
-  io.spi_out.sclk.setName("sclk")
+  io.spi_out.mosi.setName("seven_segm_mosi")
+  io.spi_out.ss.setName("seven_segm_ss")
+  io.spi_out.sclk.setName("seven_segm_sclk")
   io.rst.setName("rst")
   
   val buffered_ext_resetn = BufferCC(input = io.rst, init = True, bufferDepth = 2)
@@ -52,20 +52,18 @@ case class TopLevel() extends Component {
   val main_clock_area = new ClockingArea(main_clock_domain) {
 
  	//put code here
- 	
-
 
     val fsm = new StateMachine{ 
     
-    val INIT, SCAN_LIMIT, SET_DECODE, SET_INTENSITY, SET_NOTEST, SET_NOSHUTDOWN, SET_DIGIT_ZERO, IDLE1,IDLE2,IDLE3,IDLE4,IDLE5,IDLE6 = State()
+    val INITIAL, SCAN_LIMIT, SET_DECODE, SET_INTENSITY, SET_NOTEST, SET_NOSHUTDOWN, SET_DIGIT_ZERO, IDLE1,IDLE2,IDLE3,IDLE4,IDLE5,IDLE6 = State()
     
-    setEntry(INIT)
+    setEntry(INITIAL)
 
     val counter = Reg(UInt(7 + slowDownFactor bits))
     counter := counter + 1
 
     //Scan all digits
-    INIT.whenIsActive{
+    INITIAL.whenIsActive{
         goto(SCAN_LIMIT)
     }
 
