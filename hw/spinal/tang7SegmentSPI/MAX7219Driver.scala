@@ -65,7 +65,8 @@ case class MAX7219Driver() extends Component {
 
     val fsm = new StateMachine{ 
     
-    val INITIAL, CONFIGURATION, WAIT, SET_DIGIT = State()
+    val INITIAL, CONFIGURATION, SET_DIGIT = State()
+    val WAIT = new StateDelay( 3 )
     
     setEntry(INITIAL)
 
@@ -119,10 +120,8 @@ case class MAX7219Driver() extends Component {
       }
     }
 
-    WAIT.onEntry(counter := 0)
-    WAIT.whenIsActive{
-      when(counter === 300) {
-        
+    WAIT.whenCompleted {
+
         when (run_stage === False) {
 
         when (configuration_stage > 4) {
@@ -138,10 +137,8 @@ case class MAX7219Driver() extends Component {
         goto(SET_DIGIT)
       }
 
-      }   
     }
 
-    //Dispay number 4 on digit 0
     SET_DIGIT.onEntry(counter := 0)
     SET_DIGIT.whenIsActive {
  

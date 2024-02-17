@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Sat Feb 17 12:14:27 2024
+[*] Sat Feb 17 13:41:37 2024
 [*]
 [dumpfile] "/home/jschiefer/Code/tang7SegmentSPI/simWorkspace/TopLevel/test/wave.vcd"
-[dumpfile_mtime] "Sat Feb 17 12:13:52 2024"
-[dumpfile_size] 11820019
+[dumpfile_mtime] "Sat Feb 17 13:41:27 2024"
+[dumpfile_size] 12017902
 [savefile] "/home/jschiefer/Code/tang7SegmentSPI/simulation.gtkw"
-[timestart] 14992
+[timestart] 12489
 [size] 1920 1001
 [pos] -1 -1
-*-6.052633 15093 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-10.052633 14389 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.TopLevel.
 [sst_width] 509
@@ -18,12 +18,11 @@
 [sst_vpaned_height] 265
 @28
 TOP.TopLevel.clk
+TOP.TopLevel.main_clock_area_driver.fsm_run_stage
+@25
+TOP.TopLevel.main_clock_area_driver.fsm_configuration_stage[2:0]
 @820
-TOP.TopLevel.main_clock_area_fsm_stateReg_string[119:0]
-@29
-TOP.TopLevel.main_clock_area_fsm_run_stage
-@24
-TOP.TopLevel.main_clock_area_fsm_configuration_stage[2:0]
+TOP.TopLevel.main_clock_area_driver.fsm_stateReg_string[119:0]
 @28
 TOP.TopLevel.seven_segm_sclk
 TOP.TopLevel.seven_segm_mosi
