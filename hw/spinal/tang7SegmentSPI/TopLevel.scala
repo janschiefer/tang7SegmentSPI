@@ -73,6 +73,7 @@ case class TopLevel() extends Component {
     val counter = Reg(UInt(7 + slowDownFactor bits))
     val configuration_stage = RegInit(U(0, 3 bits))
     val run_stage = RegInit(False)
+    val current_digit = RegInit(U(0,3 bits))
 
     counter := counter + 1
 
@@ -80,6 +81,7 @@ case class TopLevel() extends Component {
     INITIAL.whenIsActive{
         configuration_stage := 0
         run_stage := False
+        current_digit := 0
         goto(CONFIGURATION)
     }
 
@@ -96,7 +98,7 @@ case class TopLevel() extends Component {
         default -> B"0000", //No operation
       )
 
-        val configuration_reg_data = configuration_stage.mux(
+      val configuration_reg_data = configuration_stage.mux(
         0 -> B"00000111", //Scan limit - display all digits
         1 -> B"11111111", //Decode mode - all digits
         2 -> B"00001111", //Intensity register - full brightness
@@ -140,12 +142,30 @@ case class TopLevel() extends Component {
     //Dispay number 4 on digit 0
     SET_DIGIT.onEntry(counter := 0)
     SET_DIGIT.whenIsActive {
+
+      val current_digit_address = current_digit.mux(
+        0 -> B"0001", //Digit 0
+        1 -> B"0010", //Digit 1
+        2 -> B"0011", //Digit 2
+        3 -> B"0100", //Digit 3
+        4 -> B"0101", //Digit 4
+        5 -> B"0110", //Digit 5
+        6 -> B"0111", //Digit 6
+        7 -> B"1000", //Digit 7  
+      )
  
-      val bitstream = generateMAX7219Bitstream(B"0001", B"00000100") // Digit 0 - set to 4
+      val bitstream = generateMAX7219Bitstream(current_digit_address, B"00000100") // Digit 0 - set to 4
 
       sendMAX7219DataBit(bitstream, counter, slowDownFactor )
 
-      when(counter === (widthOf(bitstream)*2 << slowDownFactor)-1){
+      when(counter === (widthOf(bitstream)*2 << slowDownFactor)-1) {
+
+        when(current_digit <= U(6).resized) {
+          current_digit := current_digit + U(1).resized
+        }.otherwise {
+          current_digit := U(0).resized
+        }
+
         goto(WAIT)
       }
     }
