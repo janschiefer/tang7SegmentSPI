@@ -15,7 +15,11 @@ case class TopLevel() extends Component {
     val rst = in Bool ()
   }
 
-  def sendSPIDataBit(data: Bits, counter: UInt, slowDownFactor : Int ) : Unit = {
+  def generateMAX7219Bitstream(address: Bits, register_data: Bits ) : Bits = {
+   return B"0000" ## address ## register_data
+  }
+
+  def sendMAX7219DataBit(data: Bits, counter: UInt, slowDownFactor : Int ) : Unit = {
     this.io.spi_out.ss(0) := False
     this.io.spi_out.sclk := counter(slowDownFactor)
     this.io.spi_out.mosi := data.asBools.reverse((counter >> 1+slowDownFactor).resized)
@@ -83,15 +87,27 @@ case class TopLevel() extends Component {
     CONFIGURATION.onEntry(counter := 0)
     CONFIGURATION.whenIsActive {
 
-      val configuration_bitstream = configuration_stage.mux(
-        0 -> B"0000" ## B"1011" ## B"00000111", //Scan limit - display all digits
-        1 -> B"0000" ## B"1001" ## B"11111111", //Decode mode - all digits
-        2 -> B"0000" ## B"1010" ## B"00001111", //Intensity register - full brightness
-        3 -> B"0000" ## B"1111" ## B"00000000", //Display test register - no, normal operation
-        4 -> B"0000" ## B"1100" ## B"00000001", //Shutdown register - no, normal operation
-        default -> B"0000" ## B"0000" ## B"00000000", //No operation
+      val configuration_address= configuration_stage.mux(
+        0 -> B"1011", //Scan limit 
+        1 -> B"1001", //Decode mode 
+        2 -> B"1010", //Intensity register
+        3 -> B"1111", //Display test register 
+        4 -> B"1100", //Shutdown register 
+        default -> B"0000", //No operation
       )
-      sendSPIDataBit(configuration_bitstream, counter, slowDownFactor )
+
+        val configuration_reg_data = configuration_stage.mux(
+        0 -> B"00000111", //Scan limit - display all digits
+        1 -> B"11111111", //Decode mode - all digits
+        2 -> B"00001111", //Intensity register - full brightness
+        3 -> B"00000000", //Display test register - no, normal operation
+        4 -> B"00000001", //Shutdown register - no, normal operation
+        default -> B"00000000", //Empty
+      )
+
+      val configuration_bitstream = generateMAX7219Bitstream(configuration_address, configuration_reg_data) 
+
+      sendMAX7219DataBit(configuration_bitstream, counter, slowDownFactor )
 
       when(counter === (widthOf(configuration_bitstream)*2 << slowDownFactor)-1) {
         configuration_stage := configuration_stage + U(1).resized
@@ -125,9 +141,9 @@ case class TopLevel() extends Component {
     SET_DIGIT.onEntry(counter := 0)
     SET_DIGIT.whenIsActive {
  
-      val bitstream = B"0000" ## B"0001" ## B"00000100" // Digit 0 - set to 4
+      val bitstream = generateMAX7219Bitstream(B"0001", B"00000100") // Digit 0 - set to 4
 
-      sendSPIDataBit(bitstream, counter, slowDownFactor )
+      sendMAX7219DataBit(bitstream, counter, slowDownFactor )
 
       when(counter === (widthOf(bitstream)*2 << slowDownFactor)-1){
         goto(WAIT)
