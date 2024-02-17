@@ -15,7 +15,7 @@ case class TopLevel() extends Component {
     val rst = in Bool ()
   }
 
-   def sendSPIData(data: Bits, counter: UInt, slowDownFactor : Int ) : Unit = {
+  def sendSPIDataBit(data: Bits, counter: UInt, slowDownFactor : Int ) : Unit = {
     this.io.spi_out.ss(0) := False
     this.io.spi_out.sclk := counter(slowDownFactor)
     this.io.spi_out.mosi := data.asBools.reverse((counter >> 1+slowDownFactor).resized)
@@ -91,9 +91,8 @@ case class TopLevel() extends Component {
         4 -> B"0000" ## B"1100" ## B"00000001", //Shutdown register - no, normal operation
         default -> B"0000" ## B"0000" ## B"00000000", //No operation
       )
-      io.spi_out.ss(0) := False
-      io.spi_out.sclk := counter(slowDownFactor)
-      io.spi_out.mosi := configuration_bitstream.asBools.reverse((counter >> 1+slowDownFactor).resized)
+      sendSPIDataBit(configuration_bitstream, counter, slowDownFactor )
+
       when(counter === (widthOf(configuration_bitstream)*2 << slowDownFactor)-1) {
         configuration_stage := configuration_stage + U(1).resized
         goto(WAIT)
@@ -125,10 +124,11 @@ case class TopLevel() extends Component {
     //Dispay number 4 on digit 0
     SET_DIGIT.onEntry(counter := 0)
     SET_DIGIT.whenIsActive {
-      io.spi_out.ss(0) := False
-      io.spi_out.sclk := counter(slowDownFactor)
-      val bitstream = B"0000" ## B"0001" ## B"00000100"
-      io.spi_out.mosi := bitstream.asBools.reverse((counter >> 1+slowDownFactor).resized)
+ 
+      val bitstream = B"0000" ## B"0001" ## B"00000100" // Digit 0 - set to 4
+
+      sendSPIDataBit(bitstream, counter, slowDownFactor )
+
       when(counter === (widthOf(bitstream)*2 << slowDownFactor)-1){
         goto(WAIT)
       }
