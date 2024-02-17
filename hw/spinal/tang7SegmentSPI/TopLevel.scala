@@ -25,6 +25,39 @@ case class TopLevel() extends Component {
     this.io.spi_out.mosi := data.asBools.reverse((counter >> 1+slowDownFactor).resized)
   }
 
+  def generateMAX7219DigitNumberBitstream(digit: UInt, number: UInt, decimal_point : Bool ) : Bits = {
+     
+       val current_digit_address = digit.mux(
+        0 -> B"0001", //Digit 0
+        1 -> B"0010", //Digit 1
+        2 -> B"0011", //Digit 2
+        3 -> B"0100", //Digit 3
+        4 -> B"0101", //Digit 4
+        5 -> B"0110", //Digit 5
+        6 -> B"0111", //Digit 6
+        7 -> B"1000", //Digit 7  
+      )
+
+      val number_bits = number.mux(
+        0 -> B"0000", //Number 0
+        1 -> B"0001", //Number 1
+        2 -> B"0010", //Number 2
+        3 -> B"0011", //Number 3
+        4 -> B"0100", //Number 4
+        5 -> B"0101", //Number 5
+        6 -> B"0110", //Number 6
+        7 -> B"0111", //Number 7
+        8 -> B"1000", //Number 8
+        9 -> B"1001", //Number 9
+        default -> B"1111" // Blank
+      )
+
+      val register_data_number = decimal_point ## B"000" ## number_bits
+ 
+      return generateMAX7219Bitstream(current_digit_address, register_data_number) // Digit 0 - set to 4
+
+  }
+
   io.spi_out.mosi.setName("seven_segm_mosi")
   io.spi_out.ss.setName("seven_segm_ss")
   io.spi_out.sclk.setName("seven_segm_sclk")
@@ -145,37 +178,8 @@ case class TopLevel() extends Component {
     //Dispay number 4 on digit 0
     SET_DIGIT.onEntry(counter := 0)
     SET_DIGIT.whenIsActive {
-
-      val current_digit_address = current_digit.mux(
-        0 -> B"0001", //Digit 0
-        1 -> B"0010", //Digit 1
-        2 -> B"0011", //Digit 2
-        3 -> B"0100", //Digit 3
-        4 -> B"0101", //Digit 4
-        5 -> B"0110", //Digit 5
-        6 -> B"0111", //Digit 6
-        7 -> B"1000", //Digit 7  
-      )
-
-      val number_bits = current_number.mux(
-        0 -> B"0000", //Number 0
-        1 -> B"0001", //Number 1
-        2 -> B"0010", //Number 2
-        3 -> B"0011", //Number 3
-        4 -> B"0100", //Number 4
-        5 -> B"0101", //Number 5
-        6 -> B"0110", //Number 6
-        7 -> B"0111", //Number 7
-        8 -> B"1000", //Number 8
-        9 -> B"1001", //Number 9
-        default -> B"1111" // Blank
-      )
-
-      val decimal_point = False
-
-      val register_data_number = decimal_point ## B"000" ## number_bits
  
-      val bitstream = generateMAX7219Bitstream(current_digit_address, register_data_number) // Digit 0 - set to 4
+      val bitstream = generateMAX7219DigitNumberBitstream( current_digit, current_number, current_number(0) )
 
       sendMAX7219DataBit(bitstream, counter, slowDownFactor )
 
