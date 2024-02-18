@@ -57,6 +57,8 @@ case class MAX7219Driver() extends Component {
 
   val slowDownFactor: Int = 4
 
+  val test_number = U(581108);
+
   io.spi_out.mosi := False
   io.spi_out.ss(0) := True
   io.spi_out.sclk := False
@@ -65,7 +67,7 @@ case class MAX7219Driver() extends Component {
 
   val fsm = new StateMachine {
 
-    val INITIAL, CONFIGURATION, SET_DIGIT = State()
+    val INITIAL, CONFIGURATION, CALCULATE_DIGIT, SET_DIGIT, LOOP_FOREVER = State()
     val WAIT = new StateDelay(3)
 
     setEntry(INITIAL)
@@ -75,15 +77,19 @@ case class MAX7219Driver() extends Component {
     val run_stage = RegInit(False)
     val current_digit = RegInit(U(0, 3 bits))
     val current_number = RegInit(U(0, 4 bits))
+    val tmp_number = RegInit(U(0,27 bits))
 
     counter := counter + 1
 
     // Scan all digits
     INITIAL.whenIsActive {
+      counter := 0
       configuration_stage := 0
       run_stage := False
       current_digit := 0
       current_number := 0
+      tmp_number := 0
+
       goto(CONFIGURATION)
     }
 
@@ -109,11 +115,11 @@ case class MAX7219Driver() extends Component {
         default -> B"00000000" // Empty
       )
 
-      val configuration_bitstream = generateMAX7219Bitstream(configuration_address, configuration_reg_data)
+      val bitstream = generateMAX7219Bitstream(configuration_address, configuration_reg_data)
 
-      sendMAX7219DataBit(configuration_bitstream, counter, slowDownFactor)
+      sendMAX7219DataBit(bitstream, counter, slowDownFactor)
 
-      when(counter === (widthOf(configuration_bitstream) * 2 << slowDownFactor) - 1) {
+      when(counter === (widthOf(bitstream) * 2 << slowDownFactor) - 1) {
         configuration_stage := configuration_stage + U(1).resized
         goto(WAIT)
       }
@@ -125,23 +131,39 @@ case class MAX7219Driver() extends Component {
 
         when(configuration_stage > 4) {
           run_stage := True
-          goto(SET_DIGIT)
+          tmp_number := test_number.resized
+          current_number := 0
+          goto(CALCULATE_DIGIT)
         }
           .otherwise {
             goto(CONFIGURATION)
           }
 
       }
-        .otherwise {
-          goto(SET_DIGIT)
+        .otherwise {  
+          goto(CALCULATE_DIGIT)
         }
 
+    }
+
+    CALCULATE_DIGIT.whenIsActive {
+      /*
+      when( tmp_number =/= U(0).resized) {
+        current_number := (tmp_number % U(10).resized).resized
+        tmp_number := (tmp_number / U(10).resized).resized
+      }
+      .otherwise {
+        current_number := U(10).resized // Number > 9 = Blank
+      }
+      */
+        current_number := (tmp_number % U(10).resized).resized
+        goto(SET_DIGIT)
     }
 
     SET_DIGIT.onEntry(counter := 0)
     SET_DIGIT.whenIsActive {
 
-      val bitstream = generateMAX7219DigitNumberBitstream(current_digit, current_number, current_number(0))
+      val bitstream = generateMAX7219DigitNumberBitstream(current_digit, current_number, False)
 
       sendMAX7219DataBit(bitstream, counter, slowDownFactor)
 
@@ -149,19 +171,20 @@ case class MAX7219Driver() extends Component {
 
         when(current_digit <= U(6).resized) {
           current_digit := current_digit + U(1).resized
+          goto(WAIT)
+
         }.otherwise {
-          current_digit := U(0).resized
+          goto(LOOP_FOREVER)
         }
 
-        when(current_number <= U(6).resized) {
-          current_number := current_number + U(1).resized
-        }.otherwise {
-          current_number := U(0).resized
-        }
-
-        goto(WAIT)
       }
     }
+
+    LOOP_FOREVER.onEntry( io.spi_out.ss(0) := True )
+    LOOP_FOREVER.whenIsActive {
+      goto(LOOP_FOREVER)
+    }
+
 
   }
 
