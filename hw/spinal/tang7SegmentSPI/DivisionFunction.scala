@@ -26,10 +26,9 @@ case class DivisionFunction( num_bit_width : Int ) extends Component {
 
     val busy_reg  = RegInit(False) // bits
 
-    io.busy := busy_reg
-
     io.quotient  := q.asBits
     io.remainder := r.asBits
+    io.busy := busy_reg
 
     val fsm = new StateMachine {
 
@@ -67,8 +66,9 @@ case class DivisionFunction( num_bit_width : Int ) extends Component {
                q := U(1).resized
                goto(done)
             }
-
-            goto(shift)           
+            .otherwise {
+                goto(shift)      
+            }     
         }
 
         shift.whenIsActive { 
@@ -117,6 +117,7 @@ case class DivisionFunction( num_bit_width : Int ) extends Component {
         }
 
     }
+
 
 
 }

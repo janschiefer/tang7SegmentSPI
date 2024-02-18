@@ -67,24 +67,30 @@ case class MAX7219Driver() extends Component {
 
   val fsm = new StateMachine {
 
-    val INITIAL, CONFIGURATION, CALCULATE_DIGIT, SET_DIGIT, LOOP_FOREVER = State()
+    val INITIAL, CONFIGURATION, CALCULATE_DIGIT_WAIT, CALCULATE_DIGIT, SET_DIGIT, LOOP_FOREVER = State()
     val WAIT = new StateDelay(120)
 
     setEntry(INITIAL)
 
-    val division_module = DivisionFunction( 16 )
+    val division_module = DivisionFunction( 27 )
 
     val counter = Reg(UInt(7 + slowDownFactor bits))
     val configuration_stage = RegInit(U(0, 3 bits))
     val run_stage = RegInit(False)
     val current_digit = RegInit(U(0, 3 bits))
     val current_number = RegInit(U(0, 4 bits))
-    val tmp_number = RegInit(U(0,27 bits))
 
     val division_start = RegInit(False)
-    val division_result = RegInit(U(0,27 bits))
-    val division_remainder = RegInit(U(0,27 bits))
+    val division_num = RegInit(Bits(27 bits).clearAll())
+    val division_result = RegInit(Bits(27 bits).clearAll())
+    val division_remainder = RegInit(Bits(27 bits).clearAll())
 
+    division_module.io.start := division_start
+    division_module.io.dividend := division_num
+    division_module.io.divisor := U(10,27 bits).asBits
+    division_result := division_module.io.quotient
+    division_remainder := division_module.io.remainder
+    
     counter := counter + 1
 
     // Scan all digits
@@ -94,8 +100,10 @@ case class MAX7219Driver() extends Component {
       run_stage := False
       current_digit := 0
       current_number := 0
-      tmp_number := 0
-
+      division_num := 0
+      division_result := 0
+      division_remainder := 0
+      division_start := False
       goto(CONFIGURATION)
     }
 
@@ -137,9 +145,9 @@ case class MAX7219Driver() extends Component {
 
         when(configuration_stage > 4) {
           run_stage := True
-          tmp_number := test_number.resized
+          division_num := test_number.asBits.resized
           current_number := 0
-          goto(CALCULATE_DIGIT)
+          goto(CALCULATE_DIGIT_WAIT)
         }
           .otherwise {
             goto(CONFIGURATION)
@@ -147,23 +155,36 @@ case class MAX7219Driver() extends Component {
 
       }
         .otherwise {  
-          goto(CALCULATE_DIGIT)
+          when(division_num === 0) {
+            current_number := U(10).resized // > 9 = empty space
+            goto(SET_DIGIT)
+          }
+          .otherwise {
+            goto(CALCULATE_DIGIT_WAIT)
+          }
         }
 
     }
 
-    CALCULATE_DIGIT.whenIsActive {
-      
-      when( tmp_number =/= U(0).resized) {
-        current_number := (tmp_number % U(10).resized).resized
-        tmp_number := (tmp_number / U(10).resized).resized
-      }
-      .otherwise {
-        current_number := U(10).resized // Number > 9 = Blank
-      }
-        goto(SET_DIGIT)
+    CALCULATE_DIGIT_WAIT.onEntry {
+        division_start := True
     }
+    CALCULATE_DIGIT_WAIT.whenIsActive {
+      goto(CALCULATE_DIGIT)
+    }
+      
+    CALCULATE_DIGIT.whenIsActive {
+      division_start := True
 
+      when(division_module.io.busy === False) {
+        division_num := division_result
+        current_number := division_remainder.asUInt.resized
+        division_start := False
+        goto(SET_DIGIT)
+      }
+    
+    }
+    
     SET_DIGIT.onEntry(counter := 0)
     SET_DIGIT.whenIsActive {
 
