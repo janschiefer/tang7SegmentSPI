@@ -81,6 +81,10 @@ case class MAX7219Driver() extends Component {
     val current_number = RegInit(U(0, 4 bits))
     val tmp_number = RegInit(U(0,27 bits))
 
+    val division_start = RegInit(False)
+    val division_result = RegInit(U(0,27 bits))
+    val division_remainder = RegInit(U(0,27 bits))
+
     counter := counter + 1
 
     // Scan all digits

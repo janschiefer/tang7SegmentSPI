@@ -116,7 +116,6 @@ case class DivisionFunction( num_bit_width : Int ) extends Component {
 
         }
 
-
     }
 
 
