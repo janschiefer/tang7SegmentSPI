@@ -16,13 +16,23 @@ case class MAX7219Driver() extends Component {
     return B"0000" ## address ## register_data
   }
 
-  def sendMAX7219DataBit(data: Bits, counter: UInt, slowDownFactor: Int): Unit = {
+  def sendMAX7219DataBit(
+      data: Bits,
+      counter: UInt,
+      slowDownFactor: Int
+  ): Unit = {
     this.io.spi_out.ss(0) := False
     this.io.spi_out.sclk := counter(slowDownFactor)
-    this.io.spi_out.mosi := data.asBools.reverse((counter >> 1 + slowDownFactor).resized)
+    this.io.spi_out.mosi := data.asBools.reverse(
+      (counter >> 1 + slowDownFactor).resized
+    )
   }
 
-  def generateMAX7219DigitNumberBitstream(digit: UInt, number: UInt, decimal_point: Bool): Bits = {
+  def generateMAX7219DigitNumberBitstream(
+      digit: UInt,
+      number: UInt,
+      decimal_point: Bool
+  ): Bits = {
 
     val current_digit_address = digit.mux(
       0 -> B"0001", // Digit 0
@@ -51,7 +61,10 @@ case class MAX7219Driver() extends Component {
 
     val register_data_number = decimal_point ## B"000" ## number_bits
 
-    return generateMAX7219Bitstream(current_digit_address, register_data_number) // Digit 0 - set to 4
+    return generateMAX7219Bitstream(
+      current_digit_address,
+      register_data_number
+    ) // Digit 0 - set to 4
 
   }
 
@@ -67,12 +80,13 @@ case class MAX7219Driver() extends Component {
 
   val fsm = new StateMachine {
 
-    val INITIAL, CONFIGURATION, CALCULATE_DIGIT_WAIT, CALCULATE_DIGIT, SET_DIGIT, LOOP_FOREVER = State()
+    val INITIAL, CONFIGURATION, CALCULATE_DIGIT_WAIT, CALCULATE_DIGIT,
+        SET_DIGIT, LOOP_FOREVER = State()
     val WAIT = new StateDelay(120)
 
     setEntry(INITIAL)
 
-    val division_module = DivisionFunction( 27 )
+    val division_module = DivisionFunction(27)
 
     val counter = Reg(UInt(7 + slowDownFactor bits))
     val configuration_stage = RegInit(U(0, 3 bits))
@@ -87,10 +101,10 @@ case class MAX7219Driver() extends Component {
 
     division_module.io.start := division_start
     division_module.io.dividend := division_num
-    division_module.io.divisor := U(10,27 bits).asBits
+    division_module.io.divisor := U(10, 27 bits).asBits
     division_result := division_module.io.quotient
     division_remainder := division_module.io.remainder
-    
+
     counter := counter + 1
 
     // Scan all digits
@@ -129,7 +143,8 @@ case class MAX7219Driver() extends Component {
         default -> B"00000000" // Empty
       )
 
-      val bitstream = generateMAX7219Bitstream(configuration_address, configuration_reg_data)
+      val bitstream =
+        generateMAX7219Bitstream(configuration_address, configuration_reg_data)
 
       sendMAX7219DataBit(bitstream, counter, slowDownFactor)
 
@@ -154,25 +169,25 @@ case class MAX7219Driver() extends Component {
           }
 
       }
-        .otherwise {  
+        .otherwise {
           when(division_num === 0) {
             current_number := U(10).resized // > 9 = empty space
             goto(SET_DIGIT)
           }
-          .otherwise {
-            goto(CALCULATE_DIGIT_WAIT)
-          }
+            .otherwise {
+              goto(CALCULATE_DIGIT_WAIT)
+            }
         }
 
     }
 
     CALCULATE_DIGIT_WAIT.onEntry {
-        division_start := True
+      division_start := True
     }
     CALCULATE_DIGIT_WAIT.whenIsActive {
       goto(CALCULATE_DIGIT)
     }
-      
+
     CALCULATE_DIGIT.whenIsActive {
       division_start := True
 
@@ -182,13 +197,17 @@ case class MAX7219Driver() extends Component {
         division_start := False
         goto(SET_DIGIT)
       }
-    
+
     }
-    
+
     SET_DIGIT.onEntry(counter := 0)
     SET_DIGIT.whenIsActive {
 
-      val bitstream = generateMAX7219DigitNumberBitstream(current_digit, current_number, False)
+      val bitstream = generateMAX7219DigitNumberBitstream(
+        current_digit,
+        current_number,
+        False
+      )
 
       sendMAX7219DataBit(bitstream, counter, slowDownFactor)
 
@@ -208,7 +227,6 @@ case class MAX7219Driver() extends Component {
     LOOP_FOREVER.whenIsActive {
       goto(LOOP_FOREVER)
     }
-
 
   }
 

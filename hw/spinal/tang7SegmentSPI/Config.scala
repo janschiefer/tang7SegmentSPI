@@ -7,7 +7,8 @@ object Config {
   def spinal = SpinalConfig(
     targetDirectory = "hw/gen",
     defaultConfigForClockDomains = ClockDomainConfig(
-      resetActiveLevel = HIGH, // Tang nano initalizes regs only to zero, so positve reset on boot
+      resetActiveLevel =
+        HIGH, // Tang nano initalizes regs only to zero, so positve reset on boot
       resetKind = BOOT
     ),
     defaultClockDomainFrequency = FixedFrequency(27 MHz),

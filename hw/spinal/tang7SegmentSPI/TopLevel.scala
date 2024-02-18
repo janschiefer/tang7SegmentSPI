@@ -19,7 +19,8 @@ case class TopLevel() extends Component {
   io.spi_out.sclk.setName("seven_segm_sclk")
   io.rst.setName("rst")
 
-  val buffered_ext_resetn = BufferCC(input = io.rst, init = True, bufferDepth = 2)
+  val buffered_ext_resetn =
+    BufferCC(input = io.rst, init = True, bufferDepth = 2)
 
   val timed_reset_reg_n = Reg(Bool) init (False)
   val reset_timeout = Timeout(10 ms)
