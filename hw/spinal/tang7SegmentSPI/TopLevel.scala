@@ -29,6 +29,7 @@ case class TopLevel() extends Component {
     timed_reset_reg_n := True
   }
 
+  /*
   val clk_div_counter = Counter(3)
   val divided_clock = RegInit(False)
 
@@ -37,6 +38,9 @@ case class TopLevel() extends Component {
   when(clk_div_counter.willOverflow) {
     divided_clock := !divided_clock
   }
+  */
+
+  val divided_clock = ClockDomain.current.clock
 
   val main_clock_domain = ClockDomain(
     clock = divided_clock,
@@ -48,7 +52,8 @@ case class TopLevel() extends Component {
       resetActiveLevel = LOW,
       softResetActiveLevel = LOW
     ),
-    frequency = FixedFrequency(ClockDomain.current.frequency.getValue / 4)
+    //frequency = FixedFrequency(ClockDomain.current.frequency.getValue / 4)
+    frequency = FixedFrequency(ClockDomain.current.frequency.getValue)
   )
 
   main_clock_domain.setSynchronousWith(ClockDomain.current)

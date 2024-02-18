@@ -82,7 +82,7 @@ case class MAX7219Driver() extends Component {
 
     val INITIAL, CONFIGURATION, CALCULATE_DIGIT_WAIT, CALCULATE_DIGIT,
         SET_DIGIT, LOOP_FOREVER = State()
-    val WAIT = new StateDelay(120)
+    val WAIT = new StateDelay(12)
 
     setEntry(INITIAL)
 
