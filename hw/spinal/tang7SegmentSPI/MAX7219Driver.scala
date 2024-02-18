@@ -68,9 +68,11 @@ case class MAX7219Driver() extends Component {
   val fsm = new StateMachine {
 
     val INITIAL, CONFIGURATION, CALCULATE_DIGIT, SET_DIGIT, LOOP_FOREVER = State()
-    val WAIT = new StateDelay(3)
+    val WAIT = new StateDelay(120)
 
     setEntry(INITIAL)
+
+    val division_module = DivisionFunction( 16 )
 
     val counter = Reg(UInt(7 + slowDownFactor bits))
     val configuration_stage = RegInit(U(0, 3 bits))
@@ -147,7 +149,7 @@ case class MAX7219Driver() extends Component {
     }
 
     CALCULATE_DIGIT.whenIsActive {
-      /*
+      
       when( tmp_number =/= U(0).resized) {
         current_number := (tmp_number % U(10).resized).resized
         tmp_number := (tmp_number / U(10).resized).resized
@@ -155,8 +157,6 @@ case class MAX7219Driver() extends Component {
       .otherwise {
         current_number := U(10).resized // Number > 9 = Blank
       }
-      */
-        current_number := (tmp_number % U(10).resized).resized
         goto(SET_DIGIT)
     }
 
@@ -180,7 +180,6 @@ case class MAX7219Driver() extends Component {
       }
     }
 
-    LOOP_FOREVER.onEntry( io.spi_out.ss(0) := True )
     LOOP_FOREVER.whenIsActive {
       goto(LOOP_FOREVER)
     }
