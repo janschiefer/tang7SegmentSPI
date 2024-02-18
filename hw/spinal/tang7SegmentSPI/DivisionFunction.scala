@@ -28,6 +28,9 @@ case class DivisionFunction( num_bit_width : Int ) extends Component {
 
     io.busy := busy_reg
 
+    io.quotient  := q.asBits
+    io.remainder := r.asBits
+
     val fsm = new StateMachine {
 
         val idle, prepare, shift, sub, done = State()
@@ -79,6 +82,38 @@ case class DivisionFunction( num_bit_width : Int ) extends Component {
                goto(sub)
             }
         
+        }
+
+        sub.whenIsActive {
+
+            when( bits > U(0).resized ) {
+                val tmp_remainder = (r( (num_bit_width-2) downto 0 ) ## dd(num_bit_width-1)).asUInt
+                r  := tmp_remainder
+                dd := (dd( (num_bit_width-2) downto 0 ) ## False).asUInt
+                //remainder minus divisor
+                val diff = tmp_remainder - dr
+                when( diff(num_bit_width - 1) === False ) { // No underflow
+                  q := (q((num_bit_width - 2) downto 0) ## True).asUInt // slide 1 into result
+                  r := diff
+                }
+                .otherwise { //Underflow
+                  q := (q((num_bit_width - 2) downto 0) ## False).asUInt  // slide 0 in and continue to claculate with old value
+                }
+                bits := bits - U(1).resized;
+            }
+            .otherwise {
+                goto(done)
+            }
+
+        }
+
+        done.whenIsActive {
+
+           busy_reg := False
+           when ( io.start === False ) {
+               goto(idle) 
+           }
+
         }
 
 
